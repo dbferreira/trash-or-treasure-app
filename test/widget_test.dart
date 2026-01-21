@@ -7,7 +7,7 @@ void main() {
     await tester.pumpWidget(const TreasureOrTrashApp());
 
     // Verify that the title is present
-    expect(find.text('Treasure or Trash'), findsWidgets);
+    expect(find.text('Trash or Treasure'), findsWidgets);
     expect(find.text('AI Pricing Expert'), findsOneWidget);
   });
 }

@@ -9,11 +9,10 @@ class ResultCard extends StatelessWidget {
   const ResultCard({super.key, required this.result});
 
   Color _getConfidenceColor(int confidence) {
-    if (confidence >= 80) return Colors.green;
-    if (confidence >= 60) return Colors.teal;
-    if (confidence >= 40) return Colors.amber;
-    if (confidence >= 20) return Colors.orange;
-    return Colors.red;
+    if (confidence >= 80) return const Color(0xFF10B981); // Emerald
+    if (confidence >= 60) return const Color(0xFF06B6D4); // Cyan
+    if (confidence >= 40) return const Color(0xFFF59E0B); // Amber
+    return const Color(0xFFEF4444); // Red
   }
 
   @override
@@ -21,110 +20,119 @@ class ResultCard extends StatelessWidget {
     final confidenceColor = _getConfidenceColor(result.confidence);
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 12),
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey[200]!),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with Item Name and Confidence
+          // Header
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        result.item.name,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: confidenceColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: confidenceColor.withOpacity(0.3)),
+                        color: confidenceColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(
-                        '${result.confidence}% match',
-                        style: TextStyle(
-                          color: confidenceColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.checkCircle2, size: 14, color: confidenceColor),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${result.confidence}% Match',
+                            style: TextStyle(
+                              color: confidenceColor,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
+                Text(
+                  result.item.name,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF1E293B),
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
                 Text(
                   result.item.description,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: Color(0xFF64748B),
+                    height: 1.5,
                   ),
                 ),
               ],
             ),
           ),
 
-          // Price Section
+          // Price Badge
           Container(
             margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.blue[50],
-              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF6366F1), Color(0xFF4338CA)],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6366F1).withOpacity(0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[600],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(LucideIcons.tag, color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 16),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Estimated Value',
+                    Text(
+                      'ESTIMATED RESALE VALUE',
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.blue,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white.withOpacity(0.7),
+                        letterSpacing: 1.2,
                       ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
-                      '\$${result.price.low} - \$${result.price.high}',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.blue[900],
+                      '${result.price.low} — ${result.price.high}',
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: -1,
                       ),
                     ),
                   ],
@@ -133,24 +141,25 @@ class ResultCard extends StatelessWidget {
             ),
           ),
 
-          // Sources Section
+          // Sources
           if (result.sources.isNotEmpty) ...[
             const Padding(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, 10),
+              padding: EdgeInsets.fromLTRB(24, 24, 24, 12),
               child: Text(
-                'Comparable Listings',
+                'Market References',
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF94A3B8),
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: 10,
+                runSpacing: 10,
                 children: result.sources.map((source) {
                   return InkWell(
                     onTap: () async {
@@ -159,26 +168,25 @@ class ResultCard extends StatelessWidget {
                         await launchUrl(url);
                       }
                     },
+                    borderRadius: BorderRadius.circular(14),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[200]!),
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFF1F5F9)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(LucideIcons.externalLink,
-                              size: 14, color: Colors.grey[600]),
-                          const SizedBox(width: 6),
+                          Icon(LucideIcons.link, size: 14, color: Colors.indigo[400]),
+                          const SizedBox(width: 8),
                           Text(
                             source.type,
                             style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey[700],
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF334155),
                             ),
                           ),
                         ],

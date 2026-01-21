@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'models.dart';
+import 'config.dart';
 
 class ApiService {
   final Dio _dio = Dio(BaseOptions(
-    // For Android Emulator, 10.0.2.2 points to the host's localhost
-    baseUrl: 'http://10.0.2.2:4111',
+    baseUrl: AppConfig.backendUrl,
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 60),
   ));
