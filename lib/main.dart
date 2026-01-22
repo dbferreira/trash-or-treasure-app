@@ -7,6 +7,7 @@ import 'widgets/message_bubble.dart';
 import 'widgets/result_card.dart';
 import 'widgets/image_preview_bar.dart';
 import 'screens/saved_results_view.dart';
+import 'screens/live_scan_view.dart';
 
 void main() {
   runApp(
@@ -63,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final titles = ['Trash or Treasure', 'Pinned Results'];
+    final titles = ['Trash or Treasure', 'Live Scan', 'Pinned Results'];
 
     return Scaffold(
       appBar: AppBar(
@@ -72,9 +73,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
-          ChatView(),
-          SavedResultsView(),
+        children: [
+          const ChatView(),
+          LiveScanView(isActive: _currentIndex == 1),
+          const SavedResultsView(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -84,6 +86,10 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.auto_awesome),
             label: 'Chat',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.center_focus_strong),
+            label: 'Scan',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.push_pin_outlined),
@@ -146,7 +152,9 @@ class _ChatViewState extends State<ChatView> {
                   crossAxisAlignment:
                       isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                   children: [
-                    if (message.images != null && message.images!.isNotEmpty)
+                    if (isUser &&
+                        message.images != null &&
+                        message.images!.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Wrap(
@@ -175,9 +183,11 @@ class _ChatViewState extends State<ChatView> {
                       ResultCard(
                         result: message.result!,
                         action: _buildPinAction(
+                          context,
                           state,
                           message.result!,
-                          _findImagesForResult(state.messages, index),
+                          message.images ??
+                              _findImagesForResult(state.messages, index),
                         ),
                       ),
                     if (message.loading)
@@ -263,6 +273,7 @@ class _ChatViewState extends State<ChatView> {
   }
 
   Widget _buildPinAction(
+    BuildContext context,
     AppState state,
     WorkflowResult result,
     List<String> imagePaths,
@@ -270,9 +281,27 @@ class _ChatViewState extends State<ChatView> {
     final isPinned = state.isResultPinned(result);
 
     return FilledButton.tonalIcon(
-      onPressed: isPinned
-          ? null
-          : () => state.pinResult(result, imagePaths: imagePaths),
+      onPressed: () async {
+        if (isPinned) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Already pinned')),
+          );
+          return;
+        }
+        try {
+          await state.pinResult(result, imagePaths: imagePaths);
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pinned to your list')),
+          );
+        } catch (error) {
+          debugPrint('Failed to pin result: $error');
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pin failed. Try again.')),
+          );
+        }
+      },
       icon: Icon(isPinned ? Icons.check : Icons.push_pin),
       label: Text(isPinned ? 'Pinned' : 'Pin'),
     );

@@ -13,6 +13,7 @@ class SavedResultsView extends StatelessWidget {
     final state = context.watch<AppState>();
     final pinned = state.pinnedResults;
     final theme = Theme.of(context);
+    debugPrint('Pinned view rebuild. Count=${pinned.length}');
 
     if (pinned.isEmpty) {
       return Center(
@@ -78,6 +79,7 @@ class SavedResultsView extends StatelessWidget {
           ),
         );
       },
+      semanticChildCount: pinned.length,
     );
   }
 }

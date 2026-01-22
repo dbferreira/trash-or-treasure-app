@@ -72,21 +72,42 @@ class AppState extends ChangeNotifier {
   Future<void> handleSubmit(String? description) async {
     if (_isProcessing || _selectedImages.isEmpty) return;
 
-    final userMsgId = DateTime.now().millisecondsSinceEpoch.toString();
     final currentImages = List<XFile>.from(_selectedImages);
     final currentText = description;
+
+    // Reset inputs
+    _selectedImages.clear();
+    notifyListeners();
+
+    await _runWorkflow(
+      imagePaths: currentImages.map((e) => e.path).toList(),
+      description: currentText,
+    );
+  }
+
+  Future<WorkflowResult?> processImageFile({
+    required String path,
+    String? description,
+  }) async {
+    return _runWorkflow(imagePaths: [path], description: description);
+  }
+
+  Future<WorkflowResult?> _runWorkflow({
+    required List<String> imagePaths,
+    String? description,
+  }) async {
+    if (_isProcessing || imagePaths.isEmpty) return null;
+
+    final userMsgId = DateTime.now().millisecondsSinceEpoch.toString();
 
     // Add user message
     _messages.add(Message(
       id: userMsgId,
       role: MessageRole.user,
-      content: currentText,
-      images: currentImages.map((e) => e.path).toList(),
+      content: description,
+      images: imagePaths,
       timestamp: DateTime.now(),
     ));
-
-    // Reset inputs
-    _selectedImages.clear();
     _isProcessing = true;
     notifyListeners();
 
@@ -102,8 +123,8 @@ class AppState extends ChangeNotifier {
 
     try {
       final result = await _apiService.processImages(
-        images: currentImages.map((e) => File(e.path)).toList(),
-        description: currentText,
+        images: imagePaths.map((e) => File(e)).toList(),
+        description: description,
       );
 
       // Update assistant message with result
@@ -113,10 +134,12 @@ class AppState extends ChangeNotifier {
           id: assistantMsgId,
           role: MessageRole.assistant,
           result: result,
+          images: imagePaths,
           timestamp: DateTime.now(),
           loading: false,
         );
       }
+      return result;
     } catch (error) {
       debugPrint('Workflow error: $error');
       final msgIdx = _messages.indexWhere((m) => m.id == assistantMsgId);
@@ -129,6 +152,7 @@ class AppState extends ChangeNotifier {
           loading: false,
         );
       }
+      return null;
     } finally {
       _isProcessing = false;
       notifyListeners();
@@ -142,30 +166,47 @@ class AppState extends ChangeNotifier {
 
   Future<void> pinResult(WorkflowResult result, {List<String>? imagePaths}) async {
     final key = _resultKey(result);
+    debugPrint('Pin requested: key=$key images=${imagePaths?.length ?? 0}');
     if (_pinnedResults.any((pinned) => pinned.key == key)) {
+      debugPrint('Pin skipped: already pinned');
       return;
     }
-    final locationLabel = await _resolveLocationLabel();
-    final storedImages = await _persistPinnedImages(imagePaths ?? []);
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    final pinnedAt = DateTime.now();
+    final initialImages = imagePaths ?? const [];
     _pinnedResults.insert(
       0,
       PinnedResult(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: id,
         key: key,
         result: result,
-        pinnedAt: DateTime.now(),
-        locationLabel: locationLabel,
-        imagePaths: storedImages,
+        pinnedAt: pinnedAt,
+        locationLabel: null,
+        imagePaths: initialImages,
       ),
     );
-    await _savePinnedResults();
     notifyListeners();
+    try {
+      await _savePinnedResults();
+      debugPrint('Pin saved. Total pinned: ${_pinnedResults.length}');
+    } catch (error) {
+      debugPrint('Failed to save pinned result: $error');
+    }
+
+    _hydratePinnedAssets(
+      id: id,
+      key: key,
+      result: result,
+      pinnedAt: pinnedAt,
+      imagePaths: initialImages,
+    );
   }
 
   Future<void> unpinResult(PinnedResult pinned) async {
     _pinnedResults.removeWhere((entry) => entry.id == pinned.id);
-    await _savePinnedResults();
     notifyListeners();
+    await _savePinnedResults();
+    debugPrint('Unpinned. Total pinned: ${_pinnedResults.length}');
   }
 
   String _resultKey(WorkflowResult result) {
@@ -219,6 +260,44 @@ class AppState extends ChangeNotifier {
       await file.writeAsString(jsonEncode(payload));
     } catch (error) {
       debugPrint('Failed to save pinned results: $error');
+    }
+  }
+
+  Future<void> _hydratePinnedAssets({
+    required String id,
+    required String key,
+    required WorkflowResult result,
+    required DateTime pinnedAt,
+    required List<String> imagePaths,
+  }) async {
+    String? locationLabel;
+    List<String> storedImages = const [];
+    try {
+      locationLabel = await _resolveLocationLabel()
+          .timeout(const Duration(seconds: 2), onTimeout: () => null);
+      storedImages = await _persistPinnedImages(imagePaths)
+          .timeout(const Duration(seconds: 3), onTimeout: () => imagePaths);
+      debugPrint('Pin assets ready: location=$locationLabel images=${storedImages.length}');
+    } catch (error) {
+      debugPrint('Failed to prepare pin data: $error');
+      storedImages = imagePaths;
+    }
+
+    final idx = _pinnedResults.indexWhere((entry) => entry.id == id);
+    if (idx == -1) return;
+    _pinnedResults[idx] = PinnedResult(
+      id: id,
+      key: key,
+      result: result,
+      pinnedAt: pinnedAt,
+      locationLabel: locationLabel,
+      imagePaths: storedImages,
+    );
+    notifyListeners();
+    try {
+      await _savePinnedResults();
+    } catch (error) {
+      debugPrint('Failed to save hydrated pin: $error');
     }
   }
 
