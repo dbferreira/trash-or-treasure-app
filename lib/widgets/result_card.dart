@@ -4,8 +4,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 class ResultCard extends StatelessWidget {
   final WorkflowResult result;
+  final Widget? action;
 
-  const ResultCard({super.key, required this.result});
+  const ResultCard({super.key, required this.result, this.action});
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +32,16 @@ class ResultCard extends StatelessWidget {
                   size: 18,
                   color: theme.colorScheme.primary.withOpacity(0.5),
                 ),
-                _buildConfidenceBadge(context),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (action != null) ...[
+                      action!,
+                      const SizedBox(width: 8),
+                    ],
+                    _buildConfidenceBadge(context),
+                  ],
+                ),
               ],
             ),
           ),

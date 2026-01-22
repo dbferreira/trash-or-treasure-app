@@ -12,6 +12,13 @@ class PriceInfo {
       high: json['high'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'low': low,
+      'high': high,
+    };
+  }
 }
 
 class ItemInfo {
@@ -26,6 +33,13 @@ class ItemInfo {
       description: json['description'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'description': description,
+    };
+  }
 }
 
 class SourceInfo {
@@ -39,6 +53,13 @@ class SourceInfo {
       url: json['url'] ?? '',
       type: json['type'] ?? '',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'url': url,
+      'type': type,
+    };
   }
 }
 
@@ -64,6 +85,57 @@ class WorkflowResult {
           .toList(),
       item: ItemInfo.fromJson(json['item'] ?? {}),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'price': price.toJson(),
+      'confidence': confidence,
+      'sources': sources.map((s) => s.toJson()).toList(),
+      'item': item.toJson(),
+    };
+  }
+}
+
+class PinnedResult {
+  final String id;
+  final String key;
+  final WorkflowResult result;
+  final DateTime pinnedAt;
+  final String? locationLabel;
+  final List<String> imagePaths;
+
+  PinnedResult({
+    required this.id,
+    required this.key,
+    required this.result,
+    required this.pinnedAt,
+    this.locationLabel,
+    this.imagePaths = const [],
+  });
+
+  factory PinnedResult.fromJson(Map<String, dynamic> json) {
+    return PinnedResult(
+      id: json['id'] ?? '',
+      key: json['key'] ?? '',
+      result: WorkflowResult.fromJson(json['result'] ?? {}),
+      pinnedAt: DateTime.tryParse(json['pinnedAt'] ?? '') ?? DateTime.now(),
+      locationLabel: json['locationLabel'],
+      imagePaths: (json['imagePaths'] as List? ?? [])
+          .map((e) => e.toString())
+          .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'key': key,
+      'result': result.toJson(),
+      'pinnedAt': pinnedAt.toIso8601String(),
+      'locationLabel': locationLabel,
+      'imagePaths': imagePaths,
+    };
   }
 }
 

@@ -6,6 +6,7 @@ import 'models.dart';
 import 'widgets/message_bubble.dart';
 import 'widgets/result_card.dart';
 import 'widgets/image_preview_bar.dart';
+import 'screens/saved_results_view.dart';
 
 void main() {
   runApp(
@@ -39,19 +40,69 @@ class TreasureOrTrashApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      home: const ChatScreen(),
+      home: const HomeScreen(),
     );
   }
 }
 
-class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+
+  void _onNavTap(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final titles = ['Trash or Treasure', 'Pinned Results'];
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(titles[_currentIndex]),
+        centerTitle: false,
+      ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: const [
+          ChatView(),
+          SavedResultsView(),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: _onNavTap,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.auto_awesome),
+            label: 'Chat',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.push_pin_outlined),
+            label: 'Pinned',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ChatView extends StatefulWidget {
+  const ChatView({super.key});
+
+  @override
+  State<ChatView> createState() => _ChatViewState();
+}
+
+class _ChatViewState extends State<ChatView> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -78,71 +129,71 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Trash or Treasure'),
-        centerTitle: false,
-        actions: [],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: state.messages.length,
-              itemBuilder: (context, index) {
-                final message = state.messages[index];
-                final isUser = message.role == MessageRole.user;
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            itemCount: state.messages.length,
+            itemBuilder: (context, index) {
+              final message = state.messages[index];
+              final isUser = message.role == MessageRole.user;
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Column(
-                    crossAxisAlignment:
-                        isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                    children: [
-                      if (message.images != null && message.images!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            alignment: WrapAlignment.end,
-                            children: message.images!.map((path) {
-                              return ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.file(
-                                  File(path),
-                                  width: 150,
-                                  height: 150,
-                                  fit: BoxFit.cover,
-                                ),
-                              );
-                            }).toList(),
-                          ),
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  crossAxisAlignment:
+                      isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  children: [
+                    if (message.images != null && message.images!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.end,
+                          children: message.images!.map((path) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.file(
+                                File(path),
+                                width: 150,
+                                height: 150,
+                                fit: BoxFit.cover,
+                              ),
+                            );
+                          }).toList(),
                         ),
-                      if (message.content != null && message.content!.isNotEmpty)
-                        MessageBubble(
-                          content: message.content!,
-                          role: message.role,
+                      ),
+                    if (message.content != null && message.content!.isNotEmpty)
+                      MessageBubble(
+                        content: message.content!,
+                        role: message.role,
+                      ),
+                    if (message.result != null)
+                      ResultCard(
+                        result: message.result!,
+                        action: _buildPinAction(
+                          state,
+                          message.result!,
+                          _findImagesForResult(state.messages, index),
                         ),
-                      if (message.result != null)
-                        ResultCard(result: message.result!),
-                      if (message.loading)
-                        const Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                      ),
+                    if (message.loading)
+                      const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                  ],
+                ),
+              );
+            },
           ),
-          const Divider(height: 1),
-          _buildInputArea(state),
-        ],
-      ),
+        ),
+        const Divider(height: 1),
+        _buildInputArea(state),
+      ],
     );
   }
 
@@ -209,5 +260,33 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildPinAction(
+    AppState state,
+    WorkflowResult result,
+    List<String> imagePaths,
+  ) {
+    final isPinned = state.isResultPinned(result);
+
+    return FilledButton.tonalIcon(
+      onPressed: isPinned
+          ? null
+          : () => state.pinResult(result, imagePaths: imagePaths),
+      icon: Icon(isPinned ? Icons.check : Icons.push_pin),
+      label: Text(isPinned ? 'Pinned' : 'Pin'),
+    );
+  }
+
+  List<String> _findImagesForResult(List<Message> messages, int resultIndex) {
+    for (var i = resultIndex - 1; i >= 0; i--) {
+      final message = messages[i];
+      if (message.role == MessageRole.user &&
+          message.images != null &&
+          message.images!.isNotEmpty) {
+        return message.images!;
+      }
+    }
+    return const [];
   }
 }
