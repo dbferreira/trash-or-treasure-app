@@ -14,6 +14,7 @@ class ApiService {
   Future<WorkflowResult> processImages({
     required List<File> images,
     String? description,
+    CancelToken? cancelToken,
   }) async {
     final List<Map<String, String>> formattedImages = [];
 
@@ -37,6 +38,7 @@ class ApiService {
               'description': description,
           },
         },
+        cancelToken: cancelToken,
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {

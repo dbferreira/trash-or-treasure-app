@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:dio/dio.dart';
 import 'models.dart';
 import 'api_service.dart';
 
@@ -24,6 +25,8 @@ class AppState extends ChangeNotifier {
 
   final List<XFile> _selectedImages = [];
   bool _isProcessing = false;
+  CancelToken? _cancelToken;
+  String? _activeAssistantMsgId;
 
   AppState() {
     _loadPinnedResults();
@@ -85,6 +88,13 @@ class AppState extends ChangeNotifier {
     );
   }
 
+  void cancelProcessing() {
+    final token = _cancelToken;
+    if (token != null && !token.isCancelled) {
+      token.cancel('User canceled');
+    }
+  }
+
   Future<WorkflowResult?> processImageFile({
     required String path,
     String? description,
@@ -119,12 +129,15 @@ class AppState extends ChangeNotifier {
       loading: true,
       timestamp: DateTime.now(),
     ));
+    _activeAssistantMsgId = assistantMsgId;
+    _cancelToken = CancelToken();
     notifyListeners();
 
     try {
       final result = await _apiService.processImages(
         images: imagePaths.map((e) => File(e)).toList(),
         description: description,
+        cancelToken: _cancelToken,
       );
 
       // Update assistant message with result
@@ -141,6 +154,19 @@ class AppState extends ChangeNotifier {
       }
       return result;
     } catch (error) {
+      if (error is DioException && error.type == DioExceptionType.cancel) {
+        final msgIdx = _messages.indexWhere((m) => m.id == assistantMsgId);
+        if (msgIdx != -1) {
+          _messages[msgIdx] = Message(
+            id: assistantMsgId,
+            role: MessageRole.assistant,
+            content: 'Request canceled.',
+            timestamp: DateTime.now(),
+            loading: false,
+          );
+        }
+        return null;
+      }
       debugPrint('Workflow error: $error');
       final msgIdx = _messages.indexWhere((m) => m.id == assistantMsgId);
       if (msgIdx != -1) {
@@ -155,6 +181,8 @@ class AppState extends ChangeNotifier {
       return null;
     } finally {
       _isProcessing = false;
+      _cancelToken = null;
+      _activeAssistantMsgId = null;
       notifyListeners();
     }
   }

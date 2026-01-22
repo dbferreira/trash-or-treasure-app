@@ -190,11 +190,27 @@ class _ChatViewState extends State<ChatView> {
                               _findImagesForResult(state.messages, index),
                         ),
                       ),
-                    if (message.loading)
-                      const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: CircularProgressIndicator(),
-                      ),
+                      if (message.loading)
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                              const SizedBox(width: 12),
+                              TextButton(
+                                onPressed: state.isProcessing
+                                    ? () => state.cancelProcessing()
+                                    : null,
+                                child: const Text('Cancel'),
+                              ),
+                            ],
+                          ),
+                        ),
                   ],
                 ),
               );

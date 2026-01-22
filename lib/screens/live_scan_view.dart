@@ -298,6 +298,7 @@ class _LiveScanViewState extends State<LiveScanView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final controller = _controller;
+    final orientation = MediaQuery.of(context).orientation;
 
     if (!widget.isActive) {
       return Center(
@@ -336,7 +337,9 @@ class _LiveScanViewState extends State<LiveScanView> {
         Container(color: Colors.black),
         Center(
           child: AspectRatio(
-            aspectRatio: controller.value.aspectRatio,
+            aspectRatio: orientation == Orientation.portrait
+                ? (1 / controller.value.aspectRatio)
+                : controller.value.aspectRatio,
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final previewSize =

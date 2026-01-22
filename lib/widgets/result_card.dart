@@ -89,9 +89,17 @@ class ResultCard extends StatelessWidget {
                     avatar: const Icon(Icons.link, size: 16),
                     label: Text(source.type),
                     onPressed: () async {
-                      final url = Uri.parse(source.url);
-                      if (await canLaunchUrl(url)) {
-                        await launchUrl(url);
+                      final uri = _normalizeUrl(source.url);
+                      if (uri == null) {
+                        _showLinkError(context);
+                        return;
+                      }
+                      final launched = await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                      if (!launched && context.mounted) {
+                        _showLinkError(context);
                       }
                     },
                     labelStyle: theme.textTheme.labelSmall,
@@ -109,6 +117,22 @@ class ResultCard extends StatelessWidget {
     if (price.isEmpty) return r'$0';
     if (price.startsWith(r'$')) return price;
     return r'$' + price;
+  }
+
+  Uri? _normalizeUrl(String raw) {
+    if (raw.trim().isEmpty) return null;
+    final parsed = Uri.tryParse(raw);
+    if (parsed == null) return null;
+    if (parsed.scheme.isEmpty) {
+      return Uri.tryParse('https://$raw');
+    }
+    return parsed;
+  }
+
+  void _showLinkError(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Unable to open link')),
+    );
   }
 
   Widget _buildConfidenceBadge(BuildContext context) {
