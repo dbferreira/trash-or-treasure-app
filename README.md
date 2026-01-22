@@ -1,4 +1,4 @@
-# Treasure or Trash
+# Trash or Treasure
 
 A modern Flutter application for item identification and resale value estimation, powered by a Mastra-based AI backend.
 
