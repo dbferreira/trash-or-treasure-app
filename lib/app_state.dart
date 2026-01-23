@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -26,7 +27,7 @@ class AppState extends ChangeNotifier {
   final List<XFile> _selectedImages = [];
   bool _isProcessing = false;
   CancelToken? _cancelToken;
-  String? _activeAssistantMsgId;
+  static const Duration _requestTimeout = Duration(seconds: 90);
 
   AppState() {
     _loadPinnedResults();
@@ -129,16 +130,17 @@ class AppState extends ChangeNotifier {
       loading: true,
       timestamp: DateTime.now(),
     ));
-    _activeAssistantMsgId = assistantMsgId;
     _cancelToken = CancelToken();
     notifyListeners();
 
     try {
-      final result = await _apiService.processImages(
-        images: imagePaths.map((e) => File(e)).toList(),
-        description: description,
-        cancelToken: _cancelToken,
-      );
+      final result = await _apiService
+          .processImages(
+            images: imagePaths.map((e) => File(e)).toList(),
+            description: description,
+            cancelToken: _cancelToken,
+          )
+          .timeout(_requestTimeout);
 
       // Update assistant message with result
       final msgIdx = _messages.indexWhere((m) => m.id == assistantMsgId);
@@ -154,6 +156,19 @@ class AppState extends ChangeNotifier {
       }
       return result;
     } catch (error) {
+      if (error is TimeoutException) {
+        final msgIdx = _messages.indexWhere((m) => m.id == assistantMsgId);
+        if (msgIdx != -1) {
+          _messages[msgIdx] = Message(
+            id: assistantMsgId,
+            role: MessageRole.assistant,
+            content: 'This is taking too long. Please try again.',
+            timestamp: DateTime.now(),
+            loading: false,
+          );
+        }
+        return null;
+      }
       if (error is DioException && error.type == DioExceptionType.cancel) {
         final msgIdx = _messages.indexWhere((m) => m.id == assistantMsgId);
         if (msgIdx != -1) {
@@ -168,12 +183,23 @@ class AppState extends ChangeNotifier {
         return null;
       }
       debugPrint('Workflow error: $error');
+      String message = 'Sorry, I encountered an error while processing those images. Please try again.';
+      if (error is DioException) {
+        final status = error.response?.statusCode;
+        final detail = error.response?.data;
+        if (status != null) {
+          message = 'Request failed (HTTP $status). Please try again.';
+        }
+        if (detail is Map && detail['error'] is String) {
+          message = detail['error'];
+        }
+      }
       final msgIdx = _messages.indexWhere((m) => m.id == assistantMsgId);
       if (msgIdx != -1) {
         _messages[msgIdx] = Message(
           id: assistantMsgId,
           role: MessageRole.assistant,
-          content: 'Sorry, I encountered an error while processing those images. Please try again.',
+          content: message,
           timestamp: DateTime.now(),
           loading: false,
         );
@@ -182,7 +208,6 @@ class AppState extends ChangeNotifier {
     } finally {
       _isProcessing = false;
       _cancelToken = null;
-      _activeAssistantMsgId = null;
       notifyListeners();
     }
   }

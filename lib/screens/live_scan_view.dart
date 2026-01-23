@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -417,12 +416,13 @@ class _LiveScanViewState extends State<LiveScanView> {
       }
     }
 
-    if (selected == null) return;
+    final chosen = selected;
+    if (chosen == null) return;
     setState(() {
-      _selectedLabel = selected!.label;
-      _selectedBox = selected!.rect;
+      _selectedLabel = chosen.label;
+      _selectedBox = chosen.rect;
     });
-    final label = selected!.label.trim().isEmpty ? null : selected!.label;
+    final label = chosen.label.trim().isEmpty ? null : chosen.label;
     _lockOnTarget(label);
   }
 }
