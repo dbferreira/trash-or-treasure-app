@@ -8,6 +8,7 @@ import 'widgets/result_card.dart';
 import 'widgets/image_preview_bar.dart';
 import 'screens/saved_results_view.dart';
 import 'screens/live_scan_view.dart';
+import 'package:share_plus/share_plus.dart';
 
 void main() {
   runApp(
@@ -182,13 +183,20 @@ class _ChatViewState extends State<ChatView> {
                     if (message.result != null)
                       ResultCard(
                         result: message.result!,
-                        action: _buildPinAction(
-                          context,
-                          state,
-                          message.result!,
-                          message.images ??
-                              _findImagesForResult(state.messages, index),
-                        ),
+                        actions: [
+                          _buildShareAction(
+                            message.result!,
+                            message.images ??
+                                _findImagesForResult(state.messages, index),
+                          ),
+                          _buildPinAction(
+                            context,
+                            state,
+                            message.result!,
+                            message.images ??
+                                _findImagesForResult(state.messages, index),
+                          ),
+                        ],
                       ),
                       if (message.loading)
                         Padding(
@@ -321,6 +329,46 @@ class _ChatViewState extends State<ChatView> {
       icon: Icon(isPinned ? Icons.check : Icons.push_pin),
       label: Text(isPinned ? 'Pinned' : 'Pin'),
     );
+  }
+
+  Widget _buildShareAction(
+    WorkflowResult result,
+    List<String> imagePaths,
+  ) {
+    return IconButton(
+      tooltip: 'Share',
+      icon: const Icon(Icons.share_outlined),
+      onPressed: () => _shareResult(result, imagePaths),
+    );
+  }
+
+  Future<void> _shareResult(
+    WorkflowResult result,
+    List<String> imagePaths,
+  ) async {
+    final text = _formatShareText(result);
+    if (imagePaths.isNotEmpty) {
+      final files = imagePaths.map((path) => XFile(path)).toList();
+      await Share.shareXFiles(files, text: text);
+    } else {
+      await Share.share(text);
+    }
+  }
+
+  String _formatShareText(WorkflowResult result) {
+    final low = _formatPrice(result.price.low);
+    final high = _formatPrice(result.price.high);
+    return [
+      result.item.name,
+      result.item.description,
+      'Estimated value: $low — $high',
+    ].where((line) => line.trim().isNotEmpty).join('\n\n');
+  }
+
+  String _formatPrice(String price) {
+    if (price.isEmpty) return r'$0';
+    if (price.startsWith(r'$')) return price;
+    return r'$' + price;
   }
 
   List<String> _findImagesForResult(List<Message> messages, int resultIndex) {

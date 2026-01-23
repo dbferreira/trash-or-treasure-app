@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../app_state.dart';
+import '../models.dart';
 import '../widgets/result_card.dart';
+import 'package:share_plus/share_plus.dart';
 
 class SavedResultsView extends StatelessWidget {
   const SavedResultsView({super.key});
@@ -69,11 +71,18 @@ class SavedResultsView extends StatelessWidget {
               if (item.imagePaths.isNotEmpty) const SizedBox(height: 8),
               ResultCard(
                 result: item.result,
-                action: FilledButton.tonalIcon(
-                  onPressed: () => state.unpinResult(item),
-                  icon: const Icon(Icons.close),
-                  label: const Text('Unpin'),
-                ),
+                actions: [
+                  IconButton(
+                    tooltip: 'Share',
+                    icon: const Icon(Icons.share_outlined),
+                    onPressed: () => _sharePinned(item),
+                  ),
+                  FilledButton.tonalIcon(
+                    onPressed: () => state.unpinResult(item),
+                    icon: const Icon(Icons.close),
+                    label: const Text('Unpin'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -82,6 +91,32 @@ class SavedResultsView extends StatelessWidget {
       semanticChildCount: pinned.length,
     );
   }
+}
+
+Future<void> _sharePinned(PinnedResult item) async {
+  final text = _formatShareText(item.result);
+  if (item.imagePaths.isNotEmpty) {
+    final files = item.imagePaths.map((path) => XFile(path)).toList();
+    await Share.shareXFiles(files, text: text);
+  } else {
+    await Share.share(text);
+  }
+}
+
+String _formatShareText(WorkflowResult result) {
+  final low = _formatPrice(result.price.low);
+  final high = _formatPrice(result.price.high);
+  return [
+    result.item.name,
+    result.item.description,
+    'Estimated value: $low — $high',
+  ].where((line) => line.trim().isNotEmpty).join('\n\n');
+}
+
+String _formatPrice(String price) {
+  if (price.isEmpty) return r'$0';
+  if (price.startsWith(r'$')) return price;
+  return r'$' + price;
 }
 
 class _PinnedMetaLine extends StatelessWidget {

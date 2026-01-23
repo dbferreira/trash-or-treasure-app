@@ -4,9 +4,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 class ResultCard extends StatelessWidget {
   final WorkflowResult result;
-  final Widget? action;
+  final List<Widget> actions;
 
-  const ResultCard({super.key, required this.result, this.action});
+  const ResultCard({super.key, required this.result, this.actions = const []});
 
   @override
   Widget build(BuildContext context) {
@@ -35,8 +35,8 @@ class ResultCard extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (action != null) ...[
-                      action!,
+                    if (actions.isNotEmpty) ...[
+                      ...actions,
                       const SizedBox(width: 8),
                     ],
                     _buildConfidenceBadge(context),
