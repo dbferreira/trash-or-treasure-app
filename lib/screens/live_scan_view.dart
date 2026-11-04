@@ -247,13 +247,13 @@ class _LiveScanViewState extends State<LiveScanView> {
     _isEstimating = true;
     setState(() {});
 
+    final appState = context.read<AppState>();
     try {
       final controller = _controller;
       if (controller == null) return;
       if (controller.value.isStreamingImages) {
         await controller.stopImageStream();
       }
-      final appState = context.read<AppState>();
       final photo = await controller.takePicture();
       final result =
           await appState.processImageFile(path: photo.path, description: label);
@@ -510,7 +510,7 @@ class _DetectionPainter extends CustomPainter {
       textPainter.width + padding * 2,
       textPainter.height + padding * 2,
     );
-    final bgPaint = Paint()..color = Colors.black.withOpacity(0.6);
+    final bgPaint = Paint()..color = Colors.black.withValues(alpha: 0.6);
     canvas.drawRRect(
       RRect.fromRectAndRadius(labelRect, const Radius.circular(6)),
       bgPaint,
@@ -551,7 +551,7 @@ class _ScanStatusOverlay extends StatelessWidget {
             : 'Tap a box to run pricing';
 
     return Card(
-      color: Colors.black.withOpacity(0.6),
+      color: Colors.black.withValues(alpha: 0.6),
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
@@ -598,7 +598,7 @@ class _LiveResultOverlay extends StatelessWidget {
         '${_formatPrice(result.price.low)} — ${_formatPrice(result.price.high)}';
 
     return Card(
-      color: Colors.black.withOpacity(0.7),
+      color: Colors.black.withValues(alpha: 0.7),
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(

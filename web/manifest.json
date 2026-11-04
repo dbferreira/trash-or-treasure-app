@@ -1,11 +1,11 @@
 {
-    "name": "treasure_or_trash_app",
-    "short_name": "treasure_or_trash_app",
+    "name": "Trash or Treasure",
+    "short_name": "Trash or Treasure",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "AI-powered item identification and resale value estimation.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

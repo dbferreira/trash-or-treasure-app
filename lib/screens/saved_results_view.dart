@@ -155,7 +155,7 @@ class _PinnedImageStrip extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: imagePaths.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final path = imagePaths[index];
           return InkWell(
@@ -264,8 +264,13 @@ class _ZoomableImagePageState extends State<_ZoomableImagePage> {
       } else {
         final scale = 2.5;
         _controller.value = Matrix4.identity()
-          ..translate(-position.dx * (scale - 1), -position.dy * (scale - 1))
-          ..scale(scale);
+          ..translateByDouble(
+            -position.dx * (scale - 1),
+            -position.dy * (scale - 1),
+            0,
+            1,
+          )
+          ..scaleByDouble(scale, scale, scale, 1);
         _zoomedIn = true;
       }
     });

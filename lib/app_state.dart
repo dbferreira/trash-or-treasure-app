@@ -409,7 +409,9 @@ class AppState extends ChangeNotifier {
       }
 
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
       );
       final placemarks =
           await placemarkFromCoordinates(position.latitude, position.longitude);
